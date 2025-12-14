@@ -2,7 +2,7 @@
 ## 存档用，可以自行研究
 目前解决不了关键帧之间的加速和减速。
 下面右图是用左图来引导生成的，利用TTM轨迹视频，
-点击这个 [工作流](https://www.runninghub.cn/post/1999381454922579970/?inviteCode=rh-v1091) 就可以一键体验生成TTM轨迹视频
+点击这个精确版的 [工作流](https://www.runninghub.cn/post/1999381454922579970/?inviteCode=rh-v1091) 就可以一键体验生成TTM轨迹视频
 
 
 
