@@ -2,6 +2,7 @@
 ## 个人实验阶段，存档用，可以自行研究
 目前解决不了关键帧之间的加速和减速。
 下面右图是用左图来引导生成的，利用TTM轨迹视频，
+点击这个 [工作流](https://www.runninghub.cn/post/1999381454922579970/?inviteCode=rh-v1091) 就可以一键体验
 
 
 https://github.com/user-attachments/assets/a0a14352-5580-47d4-82c1-a80dfc29a49c
