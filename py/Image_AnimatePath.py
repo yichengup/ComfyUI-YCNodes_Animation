@@ -28,7 +28,6 @@ class ycImageAnimatePath:
         return {
             "required": {
                 "background_image": ("IMAGE",),
-                "foreground_image": ("IMAGE",),
                 "path_data": ("STRING", {"default": "", "multiline": True}),
                 "canvas_width": ("INT", {"default": 512}),
                 "canvas_height": ("INT", {"default": 512}),
@@ -38,13 +37,14 @@ class ycImageAnimatePath:
                 "smooth_path": ("BOOLEAN", {"default": True, "tooltip": "是否启用路径平滑（样条插值），消除抖动"}),
             },
             "optional": {
+                "foreground_image": ("IMAGE", {"tooltip": "单个前景图。如果提供了foreground_images，此参数将被忽略"}),
+                "foreground_images": ("IMAGE", {"tooltip": "批次前景图，支持多个不同尺寸的图片。如果提供，将优先使用批次模式，并根据keyframe_image_map在不同关键帧使用不同的前景图"}),
                 "effects_data": ("STRING", {"default": "", "multiline": True, "tooltip": "动画效果数据，格式：keyframe:scale_x,scale_y,rotation,flip_x,flip_y,opacity|..."}),
-                "foreground_mask": ("MASK", {"tooltip": "前景图遮罩，白色区域保留，黑色区域透明。遮罩会在应用动画效果之前应用到前景图"}),
-                "foreground_images": ("IMAGE", {"tooltip": "批次前景图，支持多个不同尺寸的图片。如果提供，将根据keyframe_image_map在不同关键帧使用不同的前景图"}),
-                "foreground_masks": ("MASK", {"tooltip": "批次遮罩，可选。如果提供，每个遮罩对应foreground_images中的一个图片"}),
-                "keyframe_image_map": ("STRING", {"default": "", "multiline": True, "tooltip": "关键帧图片映射，格式：keyframe:image_index|keyframe:image_index。例如：0:0|10:1|20:2 表示KF0使用第0个图片，KF10使用第1个图片，KF20使用第2个图片"}),
-                "normalize_image_size": (["max", "first", "custom", "original"], {"default": "max", "tooltip": "统一尺寸模式：max=最大尺寸，first=第一个图片尺寸，custom=自定义，original=保持原始尺寸"}),
-                "custom_image_size": ("INT", {"default": 512, "min": 64, "max": 4096, "tooltip": "自定义统一尺寸（当normalize_image_size=custom时使用）"}),
+                "foreground_mask": ("MASK", {"tooltip": "单个前景图遮罩，白色区域保留，黑色区域透明。遮罩会在应用动画效果之前应用到前景图（仅在单个前景图模式下使用）"}),
+                "foreground_masks": ("MASK", {"tooltip": "批次遮罩，可选。如果提供，每个遮罩对应foreground_images中的一个图片（仅在批次模式下使用）"}),
+                "keyframe_image_map": ("STRING", {"default": "", "multiline": True, "tooltip": "关键帧图片映射，格式：keyframe:image_index|keyframe:image_index。例如：0:0|10:1|20:2 表示KF0使用第0个图片，KF10使用第1个图片，KF20使用第2个图片（仅在批次模式下使用）"}),
+                "normalize_image_size": (["max", "first", "custom", "original"], {"default": "max", "tooltip": "统一尺寸模式：max=最大尺寸，first=第一个图片尺寸，custom=自定义，original=保持原始尺寸（仅在批次模式下使用）"}),
+                "custom_image_size": ("INT", {"default": 512, "min": 64, "max": 4096, "tooltip": "自定义统一尺寸（当normalize_image_size=custom时使用，仅在批次模式下使用）"}),
             },
         }
 
@@ -53,10 +53,26 @@ class ycImageAnimatePath:
     FUNCTION = "animate"
     CATEGORY = 'YCNode/Animation'
 
-    def animate(self, background_image, foreground_image, path_data, canvas_width, canvas_height, 
-                total_frames, foreground_scale, center_anchor, smooth_path=True, effects_data="", foreground_mask=None,
-                foreground_images=None, foreground_masks=None, keyframe_image_map="", 
+    def animate(self, background_image, path_data, canvas_width, canvas_height, 
+                total_frames, foreground_scale, center_anchor, smooth_path=True, 
+                foreground_image=None, foreground_images=None, effects_data="", 
+                foreground_mask=None, foreground_masks=None, keyframe_image_map="", 
                 normalize_image_size="max", custom_image_size=512):
+        """
+        动画路径合成
+        
+        前景图输入模式：
+        1. 批次模式（优先）：如果提供了foreground_images，使用批次模式
+        2. 单个模式：如果只提供了foreground_image，使用单个前景图
+        3. 错误：如果两者都未提供，抛出异常
+        """
+        # 验证前景图输入
+        use_batch_images = foreground_images is not None and len(foreground_images) > 0
+        use_single_image = foreground_image is not None and len(foreground_image) > 0
+        
+        if not use_batch_images and not use_single_image:
+            raise ValueError("必须提供至少一个前景图：foreground_image 或 foreground_images")
+        
         # 解析路径数据（使用新的PathDataParser，支持新旧格式）
         parsed_data = PathDataParser.parse(path_data)
         keyframes = PathDataParser.extract_keyframes_for_animation(parsed_data)
@@ -64,23 +80,20 @@ class ycImageAnimatePath:
         # 解析效果数据
         effects_dict = self._parse_effects_data(effects_data)
         
-        # 解析关键帧图片映射
-        keyframe_image_map_dict = self._parse_keyframe_image_map(keyframe_image_map)
+        # 解析关键帧图片映射（仅在批次模式下使用）
+        keyframe_image_map_dict = {}
+        if use_batch_images:
+            keyframe_image_map_dict = self._parse_keyframe_image_map(keyframe_image_map)
         
         if len(keyframes) == 0:
             print("Warning: No keyframes found in path data, returning static image")
             # 如果没有关键帧，返回静态图像
             return (background_image,)
         
-        # 获取图像尺寸
-        bg_batch = background_image.shape[0]
-        fg_batch = foreground_image.shape[0]
-        
         # 转换为PIL图像进行处理
         bg_pil = self._tensor_to_pil(background_image[0])
         
-        # 处理批次前景图（如果提供）
-        use_batch_images = foreground_images is not None and len(foreground_images) > 0
+        # 处理前景图
         foreground_image_list = None
         foreground_mask_list = None
         original_fg_pil = None  # 单个前景图模式使用
@@ -110,7 +123,7 @@ class ycImageAnimatePath:
                     if i < len(foreground_mask_list):
                         foreground_image_list[i] = self._apply_mask(foreground_image_list[i], foreground_mask_list[i])
         else:
-            # 使用单个前景图（向后兼容）
+            # 使用单个前景图模式
             fg_pil = self._tensor_to_pil(foreground_image[0])
             
             # 应用遮罩（如果提供）- 在应用动画效果之前
