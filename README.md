@@ -2,13 +2,17 @@
 ## 存档用，可以自行研究
 目前解决不了关键帧之间的加速和减速。
 下面右图是用左图来引导生成的，利用TTM轨迹视频，
-点击这个 [工作流](https://www.runninghub.cn/post/1999381454922579970/?inviteCode=rh-v1091) 就可以一键体验
+点击这个 [工作流](https://www.runninghub.cn/post/1999381454922579970/?inviteCode=rh-v1091) 就可以一键体验生成TTM轨迹视频
 
 
-https://github.com/user-attachments/assets/a0a14352-5580-47d4-82c1-a80dfc29a49c
+
+https://github.com/user-attachments/assets/723ee347-91d6-43a1-8288-d71ccef66b37
+
+### 下面这个工作流是本插件的节点，用来辅助生成动画，工作流在本项目的example文件夹里
+<img width="1480" height="591" alt="image" src="https://github.com/user-attachments/assets/57790b59-bbe7-494e-adda-9f4993ae67dd" />
 
 
-关键节点，kijai的wanvideo插件中的
+关键节点，[kijai的wanvideo插件](https://github.com/kijai/ComfyUI-WanVideoWrapper)中的
 <img width="330" height="187" alt="image" src="https://github.com/user-attachments/assets/f30e4c1b-1c61-43b2-894f-d474a60780d1" />
 
 
