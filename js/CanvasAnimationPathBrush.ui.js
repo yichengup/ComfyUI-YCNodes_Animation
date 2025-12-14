@@ -218,10 +218,20 @@ export function initUIBindings(node, state) {
     };
 
     node.onConfigure = function () {
+        // 隐藏不需要显示的参数
+        const totalFramesWidget = this.widgets.find(w => w.name === WIDGET_NAMES.TOTAL_FRAMES);
+        const autoNormalizeWidget = this.widgets.find(w => w.name === "auto_normalize");
+        
+        if (totalFramesWidget) {
+            totalFramesWidget.hidden = true;
+        }
+        if (autoNormalizeWidget) {
+            autoNormalizeWidget.hidden = true;
+        }
+
         // 从widgets读取值
         const widthWidget = this.widgets.find(w => w.name === WIDGET_NAMES.CANVAS_WIDTH);
         const heightWidget = this.widgets.find(w => w.name === WIDGET_NAMES.CANVAS_HEIGHT);
-        const totalFramesWidget = this.widgets.find(w => w.name === WIDGET_NAMES.TOTAL_FRAMES);
 
         if (widthWidget && heightWidget) {
             const width = widthWidget.value || 512;
@@ -828,6 +838,17 @@ function setupHiddenWidgets(node) {
     if (!imageBase64Widget) {
         imageBase64Widget = node.addWidget("text", WIDGET_NAMES.IMAGE_BASE64, "", () => { });
         imageBase64Widget.hidden = true;
+    }
+
+    // 隐藏 auto_normalize 参数（如果存在）
+    const autoNormalizeWidget = node.widgets.find(w => w.name === "auto_normalize");
+    if (autoNormalizeWidget) {
+        autoNormalizeWidget.hidden = true;
+    }
+
+    // 确保 total_frames widget 已隐藏（如果已存在）
+    if (totalFramesWidget) {
+        totalFramesWidget.hidden = true;
     }
 
     node.properties.backgroundImageObj = null;
